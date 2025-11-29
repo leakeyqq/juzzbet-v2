@@ -7,6 +7,7 @@ const marketSchema = new mongoose.Schema({
     },
     marketShortId: {
         type: String,
+        unique: true,
         required: false
     },
     description: {
@@ -33,6 +34,10 @@ const marketSchema = new mongoose.Schema({
         email: {
             type: String,
             required: true
+        },
+        profilePhoto: {
+            type: String,
+            required: false
         }
     },
     bettingStartsAt: {
@@ -61,6 +66,11 @@ const marketSchema = new mongoose.Schema({
             required: false
         }
     }],
+    judgesEmails: [{
+        _id: false,
+        type: String,
+        required: false
+    }],
     publicity: {
         forThePublic: {
             type: Boolean,
@@ -82,7 +92,8 @@ const marketSchema = new mongoose.Schema({
     blockchain: {
         network: {
             type: String,
-            enum: ["celo"]
+            enum: ["celo"],
+            required: false
         },
         marketId: {
             type: String,
@@ -92,6 +103,10 @@ const marketSchema = new mongoose.Schema({
     totalYesBets: {
             type: String,
             default: "0",
+    },
+    timezoneOfCreator: {
+        type: String, 
+        required: false
     },
     totalNoBets: {
         type: String,
