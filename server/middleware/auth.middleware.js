@@ -14,7 +14,7 @@ export const requireAuth = (req, res, next) => {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     req.user = payload;
-     req.userId = payload._userId; // ✅ assign wallet addre
+     req.walletAddress = payload.walletAddress; // ✅ assign wallet addre
     next();
   } catch(error) {
     console.error(error)

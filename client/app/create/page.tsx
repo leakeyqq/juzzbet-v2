@@ -173,6 +173,9 @@ export default function CreateBetPage() {
     }
 
     const result = await response.json()
+    alert('Market created succefully')
+    // router.push(`/bet/${result.id}`)
+
     
     // Redirect to the newly created bet page or home
     // router.push(`/bet/${result.id}`)

@@ -27,8 +27,8 @@ export const login = async (req, res) => {
       })
     }
 
-  const _userId = user._id
-  const token = jwt.sign({ _userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const walletAddress = user.ethAddress
+  const token = jwt.sign({ walletAddress }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
   res
     .cookie("token", token, {
