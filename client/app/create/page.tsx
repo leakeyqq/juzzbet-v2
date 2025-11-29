@@ -5,6 +5,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, X } from "lucide-react"
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+import { useWeb3 } from "@/contexts/useWeb3"
+
 
 
 export default function CreateBetPage() {
@@ -25,6 +27,8 @@ export default function CreateBetPage() {
   const [timezone, setTimezone] = useState("")
   const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const { createMarket } = useWeb3();
+
 
 
 
@@ -99,16 +103,6 @@ export default function CreateBetPage() {
     setJudgesEmails(newEmails)
   }
 
-  // const handleSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault()
-  //   if (!title.trim() || !bettingStartsDate || !bettingStartsTime || !bettingEndsDate || !bettingEndsTime) return
-
-  //   setIsSubmitting(true)
-  //   setTimeout(() => {
-  //     setIsSubmitting(false)
-  //     router.push("/")
-  //   }, 500)
-  // }
 
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault()
@@ -143,6 +137,9 @@ export default function CreateBetPage() {
       betResolvedOn = new Date(`${resolutionDate}T${resolutionTime}`).toISOString()
     }
 
+    const celoMarketId = await createMarket()
+
+
     // 3. Prepare the data for API
     const betData = {
       coverImage: imageUrl,
@@ -154,6 +151,7 @@ export default function CreateBetPage() {
       judges: validJudgesEmails,
       marketVisibility,
       timezone,
+      marketId: celoMarketId
     }
 
     // Send data to your backend API
@@ -173,6 +171,7 @@ export default function CreateBetPage() {
     }
 
     const result = await response.json()
+    
     alert('Market created succefully')
     // router.push(`/bet/${result.id}`)
 

@@ -4,7 +4,7 @@ import User from "../models/users/user.model.js"
 
 export const createMarket = async(req, res) => {
     try {
-        const {coverImage, title, description, betStartTime, betEndTime, betResolvedOn, judges,marketVisibility, timezone } = req.body
+        const {coverImage, title, description, betStartTime, betEndTime, betResolvedOn, judges,marketVisibility, timezone, marketId } = req.body
         console.log('req.body ', req.body)
 
         // details of creator
@@ -45,13 +45,25 @@ export const createMarket = async(req, res) => {
                 passedReview: false, // default to false, will be updated after admin review
                 comments: "" // empty initially
             },
-            timezoneOfCreator: timezone 
+            timezoneOfCreator: timezone,
+            blockchain: {
+                network: "celo",
+                marketId: marketId
+            }
         })
 
         newMarket = await newMarket.save()
         return res.status(200).json({newMarket})
     } catch (error) {
         console.error(error)
+        return res.status(500).json({error: error.message})
+    }
+}
+export const allMarkets = async(req, res) => {
+    try {
+        const allMarkets = await Market.find({}, {bets: 0}).lean().exec()
+        return res.status(200).json({markets: allMarkets})
+    } catch (error) {
         return res.status(500).json({error: error.message})
     }
 }
