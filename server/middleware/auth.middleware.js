@@ -7,6 +7,7 @@ export const requireAuth = (req, res, next) => {
 
 
   if (!token) {
+    console.error("no token")
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -15,7 +16,8 @@ export const requireAuth = (req, res, next) => {
     req.user = payload;
      req.userId = payload._userId; // ✅ assign wallet addre
     next();
-  } catch {
+  } catch(error) {
+    console.error(error)
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 };

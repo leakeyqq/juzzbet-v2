@@ -6,6 +6,8 @@ import { injected } from "wagmi/connectors";
 import { getWeb3AuthInstance } from "../../lib/web3AuthConnector"
 import { Web3Auth  } from "@web3auth/modal";
 import { userInfo } from "os";
+import { useAuth } from '@/contexts/AuthContext';
+
 
 interface UserInfo {
   name: string;
@@ -35,6 +37,7 @@ export default function ConnectWalletButton() {
 
   // const { userInfo, loading, error, isMFAEnabled, getUserInfo } = useWeb3AuthUser();
   const [user, setUser] = useState(null);
+     const { triggerAuthCheck } = useAuth();
 
 // const [solanaAddress, setSolanaAddress] = useState(null);
   
@@ -49,6 +52,13 @@ export default function ConnectWalletButton() {
     setMounted(true); // ✅ Now it's safe to render client-only logic
   }, []);
 
+        // After successful connection
+  useEffect(() => {
+    if (isConnected && address) {
+      triggerAuthCheck(); // This will force navbar to re-render
+    }
+  }, [isConnected, address, triggerAuthCheck]);
+  
 
     // Detect if we're coming back from Web3Auth redirect
   useEffect(() => {
@@ -68,67 +78,69 @@ export default function ConnectWalletButton() {
   }, [mounted]);
 
 
+
+
   // 🔐 Backend auth after connecting
-  useEffect(() => {
-    if (isConnected && address) {
-      const login = async () => {
-        try {
+  // useEffect(() => {
+  //   if (isConnected && address) {
+  //     const login = async () => {
+  //       try {
 
-        const web3auth = await getWeb3AuthInstance();
+  //       const web3auth = await getWeb3AuthInstance();
 
-        const userInfo = await web3auth.getUserInfo();
-        console.log('user info from auth is : ', userInfo)
-          // Type assert userInfo
-        const userData = userInfo as unknown as UserInfo;
+  //       const userInfo = await web3auth.getUserInfo();
+  //       console.log('user info from auth is : ', userInfo)
+  //         // Type assert userInfo
+  //       const userData = userInfo as unknown as UserInfo;
 
 
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/login`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
-                ethAddress: address,
-                names: userData.name,
-                email: userData.email,
-                profileImage: userData.profileImage,
-                typeOfLogin: userData.typeOfLogin
-               }),
-              credentials: "include",
-            }
-          );
-          const data = await res.json();
-          if (data.success) {
-            document.cookie = `userWalletAddress=${address}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
-            document.cookie = `name=${userData.name}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
-            document.cookie = `email=${userData.email}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
-            document.cookie = `profilePhoto=${userData.profileImage}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
+  //         const res = await fetch(
+  //           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/login`,
+  //           {
+  //             method: "POST",
+  //             headers: { "Content-Type": "application/json" },
+  //             body: JSON.stringify({ 
+  //               ethAddress: address,
+  //               names: userData.name,
+  //               email: userData.email,
+  //               profileImage: userData.profileImage,
+  //               typeOfLogin: userData.typeOfLogin
+  //              }),
+  //             credentials: "include",
+  //           }
+  //         );
+  //         const data = await res.json();
+  //         if (data.success) {
+  //           document.cookie = `userWalletAddress=${address}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
+  //           document.cookie = `name=${userData.name}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
+  //           document.cookie = `email=${userData.email}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
+  //           document.cookie = `profilePhoto=${userData.profileImage}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`;
 
-            // Also set a cookie for server-side access during API calls
-            document.cookie = `userData=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+  //           // Also set a cookie for server-side access during API calls
+  //           document.cookie = `userData=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
 
-            console.log("Login successful:", data);
-          } else {
-            console.log("Login failed:", data);
-          }
-          // Update signing in state
-          setIsSigningIn(false);
-          setIsRedirectFromAuth(false);
+  //           console.log("Login successful:", data);
+  //         } else {
+  //           console.log("Login failed:", data);
+  //         }
+  //         // Update signing in state
+  //         setIsSigningIn(false);
+  //         setIsRedirectFromAuth(false);
 
-          if(refreshPage){
-            setRefreshpage(false)
-            window.location.reload();
-          }
-        } catch (err) {
-          console.error("Login error:", err);
-          setIsSigningIn(false);
-          setIsRedirectFromAuth(false);
-        }
-      };
+  //         if(refreshPage){
+  //           setRefreshpage(false)
+  //           window.location.reload();
+  //         }
+  //       } catch (err) {
+  //         console.error("Login error:", err);
+  //         setIsSigningIn(false);
+  //         setIsRedirectFromAuth(false);
+  //       }
+  //     };
 
-      login();
-    }
-  }, [isConnected, address, refreshPage]);
+  //     login();
+  //   }
+  // }, [isConnected, address, refreshPage]);
 
 
 

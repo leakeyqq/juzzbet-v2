@@ -7,6 +7,8 @@ import ConnectWalletButton from "@/components/connectWallet/connectBtn"
 import { useAccount } from "wagmi"
 import { getWeb3AuthInstance } from "../lib/web3AuthConnector"
 import { useWeb3 } from "@/contexts/useWeb3"
+import { useAuth } from '@/contexts/AuthContext';
+
 
 
 
@@ -15,6 +17,8 @@ export function Navbar() {
   const { address, isConnected } = useAccount()
   const [userInfo, setUserInfo] = useState<any>(null)
   const { isWalletReady } = useWeb3();
+      const { isAuthenticated } = useAuth();
+
 
 
   // Fetch user info when connected
@@ -34,8 +38,57 @@ export function Navbar() {
     fetchUserInfo()
   }, [isConnected, address, isWalletReady])
 
+    useEffect(() => {
+    const hasLoggedIn = sessionStorage.getItem('hasLoggedIn') === 'true';
+    // if (isConnected && address && isAuthenticated && !hasLoggedIn) {
+    if (isConnected && address && isAuthenticated && !hasLoggedIn) {
+
+      console.log('going to log in')
+      const login = async () => {
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/login`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                ethAddress: address,
+                names: userInfo.typeOfLogin === 'email_passwordless' ? null : (userInfo.name || null),
+                email: userInfo.email,
+                profileImage: userInfo.profileImage || null,
+                typeOfLogin: userInfo.typeOfLogin
+              }),
+              credentials: "include",
+            }
+          );
+          const data = await res.json();
+          if (data.success) {
+            document.cookie = `userWalletAddress=${address}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict}`; // 7 days
+            console.log("Login successful:", data);
+            sessionStorage.setItem('hasLoggedIn', 'true'); // Set session storage
+            window.location.reload();
+          } else {
+            console.log("Login failed:", data);
+          }
+
+        } catch (err) {
+          console.error("Login error:", err);
+        }
+      };
+
+      login();
+    }
+  }, [isConnected, address, userInfo]);
+  // Reset login state when disconnected
+useEffect(() => {
+  if (!isConnected) {
+  sessionStorage.removeItem('hasLoggedIn');
+  sessionStorage.removeItem('hasSentInviteCode');
+  }
+}, [isConnected]);
+
   // User is considered logged in if they have a connected wallet
-  const isLoggedIn = isConnected && address
+  // const isLoggedIn = isConnected && address
 
   return (
     <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
@@ -49,7 +102,7 @@ export function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-3">
-          {isLoggedIn ? (
+          {isConnected && address ? (
             <>
               <Link
                 href="/my-bets"
@@ -109,14 +162,14 @@ export function Navbar() {
         </div>
 
         {/* Mobile Connect Button when not logged in */}
-        {!isLoggedIn && (
+        {!(isConnected && address) && (
           <div className="md:hidden">
             <ConnectWalletButton />
           </div>
         )}
 
         {/* Mobile Menu Button when logged in */}
-        {isLoggedIn && (
+        {isConnected && address && (
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             className="md:hidden text-foreground hover:text-accent transition-colors"
@@ -127,7 +180,7 @@ export function Navbar() {
       </div>
 
       {/* Mobile Menu */}
-      {showMobileMenu && isLoggedIn && (
+      {showMobileMenu && isConnected && address && (
         <div className="border-t border-border/50 px-4 sm:px-6 py-4 space-y-3 md:hidden backdrop-blur-sm bg-background/95">
              {/* User Profile Section */}
     <div className="flex items-center gap-3 pb-3 border-b border-border/50">

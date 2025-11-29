@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser"
 dotenv.config()
 
 import authRouter from "./routes/auth.router.js"
+import marketRouter from "./routes/market.router.js"
 
 const app = express();
 app.use(express.json());
@@ -36,13 +37,56 @@ app.use(cors({
 }));
 
 
-mongoose.connect(process.env.MONGODB_URI).then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB error:", err));
+// mongoose.connect(process.env.MONGODB_URI).then(() => console.log("MongoDB connected"))
+//   .catch(err => console.error("MongoDB error:", err));
+
+
+// Optimized Mongoose connection
+const mongooseOptions = {
+  serverSelectionTimeoutMS: 30000,
+  socketTimeoutMS: 45000,
+  maxPoolSize: 10,
+  minPoolSize: 5,
+  maxIdleTimeMS: 30000,
+  retryWrites: true,
+  retryReads: true,
+};
+
+const connectWithRetry = async (retries = 5, delay = 5000) => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, mongooseOptions);
+    console.log("MongoDB connected successfully");
+  } catch (err) {
+    console.error(`MongoDB connection failed (attempt ${retries}):`, err);
+    if (retries > 0) {
+      console.log(`Retrying in ${delay}ms...`);
+      setTimeout(() => connectWithRetry(retries - 1, delay), delay);
+    } else {
+      console.error("Max retries reached. Exiting...");
+      process.exit(1);
+    }
+  }
+};
+
+connectWithRetry();
+
+// Connection event handlers
+mongoose.connection.on('error', err => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected - attempting reconnect...');
+  setTimeout(() => connectWithRetry(3, 5000), 5000);
+});
+
+
 
 app.get("/ping", (req, res) => {
   res.send("pong from server");
 });
 app.use("/api/auth", authRouter);
+app.use("/api/market", marketRouter)
 
 app.use(/.*/, (req, res) => {
   console.log(`[${req.method}] Unhandled request to: ${req.originalUrl}`);

@@ -4,6 +4,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, X } from "lucide-react"
+import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+
 
 export default function CreateBetPage() {
   const router = useRouter()
@@ -21,6 +23,10 @@ export default function CreateBetPage() {
   const [currentUserEmail] = useState("alice@example.com") // Mock current user email
   const [marketVisibility, setMarketVisibility] = useState<"public" | "private">("public")
   const [timezone, setTimezone] = useState("")
+  const [uploading, setUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+
+
 
   useEffect(() => {
     // Set current timezone
@@ -38,16 +44,46 @@ export default function CreateBetPage() {
     setJudgesEmails([currentUserEmail])
   }, [currentUserEmail])
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try{
     const file = e.target.files?.[0]
+    if (!file) return;
+
+    setUploading(true);
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
         setCoverImage(reader.result as string)
       }
       reader.readAsDataURL(file)
+      const url = await uploadToCloudinary(file);
+      setImageUrl(url);
+      console.log("image url is ", url)
+    }
+    }catch(e){
+      alert(e)
+      console.log(e)
+    }finally{
+      setUploading(false);
     }
   }
+//   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+
+//   const file = e.target.files?.[0];
+//   if (!file) return;
+
+//   setUploading(true);
+//   try {
+//     const url = await uploadToCloudinary(file);
+//     setImageUrl(url);
+//     console.log("Uploaded image URL:", url);
+//   } catch (err) {
+//     alert(`Upload failed : ${err}`)
+//     // console.error("Upload failed", err);
+//   }
+//   setUploading(false);
+// };
+
 
   const handleAddJudgeEmail = () => {
     setJudgesEmails([...judgesEmails, ""])
@@ -63,16 +99,91 @@ export default function CreateBetPage() {
     setJudgesEmails(newEmails)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim() || !bettingStartsDate || !bettingStartsTime || !bettingEndsDate || !bettingEndsTime) return
+  // const handleSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   if (!title.trim() || !bettingStartsDate || !bettingStartsTime || !bettingEndsDate || !bettingEndsTime) return
 
-    setIsSubmitting(true)
-    setTimeout(() => {
-      setIsSubmitting(false)
-      router.push("/")
-    }, 500)
+  //   setIsSubmitting(true)
+  //   setTimeout(() => {
+  //     setIsSubmitting(false)
+  //     router.push("/")
+  //   }, 500)
+  // }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  
+  // Basic validation
+  if (!title.trim() || !bettingStartsDate || !bettingStartsTime || !bettingEndsDate || !bettingEndsTime || !imageUrl) {
+    alert("Please fill in all required fields")
+    return
   }
+
+  // Validate judges emails
+  const validJudgesEmails = judgesEmails.filter(email => 
+    email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  )
+
+  if (validJudgesEmails.length === 0) {
+    alert("Please add at least one valid judge email")
+    return
+  }
+
+  setIsSubmitting(true)
+
+  try {
+    let coverImageUrl = null
+
+    // 2. Combine date and time into Date objects
+    const betStartTime = new Date(`${bettingStartsDate}T${bettingStartsTime}`).toISOString()
+    const betEndTime = new Date(`${bettingEndsDate}T${bettingEndsTime}`).toISOString()
+    
+    let betResolvedOn = null
+    if (resolutionDate && resolutionTime) {
+      betResolvedOn = new Date(`${resolutionDate}T${resolutionTime}`).toISOString()
+    }
+
+    // 3. Prepare the data for API
+    const betData = {
+      coverImage: imageUrl,
+      title: title.trim(),
+      description: description.trim(),
+      betStartTime,
+      betEndTime,
+      betResolvedOn,
+      judges: validJudgesEmails,
+      marketVisibility,
+      timezone,
+    }
+
+    // Send data to your backend API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/market/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: "include", // send cookies for auth
+      body: JSON.stringify(betData),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      alert(`${errorData.error || "Failed to create bet"}`)
+      throw new Error(errorData.error || 'Failed to create bet')
+    }
+
+    const result = await response.json()
+    
+    // Redirect to the newly created bet page or home
+    // router.push(`/bet/${result.id}`)
+    
+  } catch (error) {
+    console.error('Error creating bet:', error)
+    alert(error instanceof Error ? error.message : 'Failed to create bet. Please try again.')
+  } finally {
+    setIsSubmitting(false)
+  }
+}
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,7 +206,7 @@ export default function CreateBetPage() {
           {/* Cover Image */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Cover Image</label>
-            {coverImage ? (
+            {imageUrl ? (
               <div className="relative">
                 <img
                   src={coverImage || "/placeholder.svg"}
@@ -104,12 +215,15 @@ export default function CreateBetPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setCoverImage(null)}
+                  onClick={() => setImageUrl(null)}
                   className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
                 >
                   <X className="w-4 h-4" />
                 </button>
+                 {uploading && <p className="text-lg text-gray-500">Uploading...wait patiently!</p>}
+
               </div>
+
             ) : (
               <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <Upload className="w-8 h-8 text-muted-foreground mb-2" />

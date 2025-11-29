@@ -68,6 +68,10 @@ export  function getWeb3AuthConnector(chains: Chain[]) {
           name: "Google",
           showOnModal: true,
         },
+         email_passwordless: {
+            name: 'email passwordless login',
+            showOnModal: false,
+        },
         facebook: {
           name: "Facebook",
           showOnModal: false,

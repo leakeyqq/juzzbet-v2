@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { AppProvider } from '@/providers/AppProvider';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 
 
@@ -48,7 +49,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans antialiased`}>
         <AppProvider>
-          {children}
+          <AuthProvider>
+
+            {children}
+          </AuthProvider>
+
           <Analytics />
         </AppProvider>
 

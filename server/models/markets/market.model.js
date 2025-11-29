@@ -5,6 +5,10 @@ const marketSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    marketShortId: {
+        type: String,
+        required: false
+    },
     description: {
         type: String,
         required: false
@@ -41,7 +45,7 @@ const marketSchema = new mongoose.Schema({
     },
     bettingResolvesAt: {
         type: Date,
-        req, uired: false
+        required: false
     },
     judges: [{
         emailAddress: {
@@ -124,3 +128,4 @@ const marketSchema = new mongoose.Schema({
 }, { timestamps: true })
 
 const Market = mongoose.model("markets", marketSchema, "markets")
+export default Market

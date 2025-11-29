@@ -6,11 +6,14 @@ import { Navbar } from "@/components/navbar"
 import { mockBets } from "@/lib/mock-data"
 import type { Bet } from "@/lib/types"
 import { Plus } from "lucide-react"
+import { useAccount } from "wagmi"
+
+
 
 export default function Home() {
   const [bets, setBets] = useState<Bet[]>(mockBets)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showCreateOptions, setShowCreateOptions] = useState(false)
+  const { address, isConnected } = useAccount()
 
   const currentUser = {
     id: "user-1",
@@ -43,17 +46,12 @@ export default function Home() {
     )
   }
 
+  const isLoggedIn = isConnected && address
+
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onLogin={() => {
-          setIsLoggedIn(true)
-          console.log("[v0] User logged in with X")
-        }}
-        onLogout={() => setIsLoggedIn(false)}
-        currentUser={currentUser}
-      />
+      <Navbar/>
 
       <div className="max-w-7xl mx-auto pb-24 px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 auto-rows-max">
