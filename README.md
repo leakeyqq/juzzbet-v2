@@ -1,3 +1,5 @@
+**🌐 Live Website: [https://juzz.bet](https://juzz.bet)**
+
 # 🗳️ Juzz.bet - Political Prediction Markets for Africa
 
 ![Juzz.bet](https://img.shields.io/badge/Juzz.bet-Political_Prediction-blue)
