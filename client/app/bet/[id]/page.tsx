@@ -106,8 +106,10 @@ export default function BetDetailPage() {
   }
 
   // Calculate values from the real data
-  const yesVolume = bet.bets.yesBets.reduce((sum, b) => sum + (b.amount || 0), 0)
-  const noVolume = bet.bets.noBets.reduce((sum, b) => sum + (b.amount || 0), 0)
+  // const yesVolume = bet.bets.yesBets.reduce((sum, b) => sum + (b.amount || 0), 0)
+  const yesVolume = Number(bet.totalYesBets)
+  const noVolume = Number(bet.totalNoBets)
+  // const noVolume = bet.bets.noBets.reduce((sum, b) => sum + (b.amount || 0), 0)
   const totalVolume = yesVolume + noVolume
 
   // const yesPct = totalVolume > 0 ? Math.round((yesVolume / totalVolume) * 100) : 50
@@ -277,11 +279,11 @@ export default function BetDetailPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center p-3 bg-card rounded-lg border border-border">
                       <span className="text-sm text-muted-foreground">YES bets</span>
-                      <span className="text-lg font-bold text-foreground">${yesVolume.toLocaleString()}</span>
+                      <span className="text-lg font-bold text-foreground">${yesVolume}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-card rounded-lg border border-border">
                       <span className="text-sm text-muted-foreground">NO bets</span>
-                      <span className="text-lg font-bold text-foreground">${noVolume.toLocaleString()}</span>
+                      <span className="text-lg font-bold text-foreground">${noVolume}</span>
                     </div>
                   </div>
                 </div>

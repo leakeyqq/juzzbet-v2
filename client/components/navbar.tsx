@@ -16,8 +16,9 @@ export function Navbar() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const { address, isConnected } = useAccount()
   const [userInfo, setUserInfo] = useState<any>(null)
-  const { isWalletReady } = useWeb3();
+  const { isWalletReady, checkBalanceOfSingleAsset } = useWeb3();
   const { isAuthenticated } = useAuth();
+  const [userBalance, setUserBalance] = useState(0)
     const [isMounted, setIsMounted] = useState(false)
 
 
@@ -27,6 +28,22 @@ export function Navbar() {
     setIsMounted(true)
   }, [])
 
+  
+useEffect(() => {
+  const fetchBalance = async () => {
+    if (address && isConnected && isWalletReady) {
+      try {
+        const balance = await checkBalanceOfSingleAsset("cUSD", "celo")
+        setUserBalance(Number(balance.balance))
+      } catch (error) {
+        console.error("Error fetching balance:", error)
+        setUserBalance(0)
+      }
+    }
+  }
+
+  fetchBalance()
+}, [address, isConnected, isWalletReady])
 
   // Fetch user info when connected
   useEffect(() => {
@@ -152,6 +169,12 @@ export function Navbar() {
                 Wallet
               </Link>
 
+<div className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold rounded-full border border-green-600 shadow-sm">
+   ${userBalance.toFixed(2)}
+</div>
+
+
+
               {/* Profile dropdown */}
               <div className="relative group">
                 <button className="flex items-center justify-center w-10 h-10 rounded-full bg-accent text-white hover:bg-accent/80 transition-colors">
@@ -203,14 +226,22 @@ export function Navbar() {
         )}
 
         {/* Mobile Menu Button when logged in */}
-        {isConnected && address && (
-          <button
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="md:hidden text-foreground hover:text-accent transition-colors"
-          >
-            {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        )}
+
+        {/* Mobile Menu Button when logged in */}
+{isConnected && address && (
+  <div className="md:hidden flex items-center gap-2">
+    <div className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold rounded-lg border border-green-600 shadow-sm">
+      ${userBalance.toFixed(2)}
+    </div>
+    <button
+      onClick={() => setShowMobileMenu(!showMobileMenu)}
+      className="text-foreground hover:text-accent transition-colors"
+    >
+      {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+    </button>
+  </div>
+)}
+
       </div>
 
       {/* Mobile Menu */}

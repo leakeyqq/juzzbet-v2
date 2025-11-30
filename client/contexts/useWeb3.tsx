@@ -272,6 +272,7 @@ export const useWeb3 = () => {
             } catch (error) {
                 console.log('error imehappend')
                 console.error(error)
+                throw error
             }
 
 
@@ -284,6 +285,9 @@ export const useWeb3 = () => {
     }
     const placeBetOnchain_celo = async (usdAmount: string, marketOnchainId: Number, yesBet: Boolean) => {
         console.log('market id is ', marketOnchainId, typeof(marketOnchainId))
+        if(!marketOnchainId){
+            throw new Error('Market onchain Id is missing!')
+        }
         if (await isUsingWeb3Auth()) {
             try {
                 
@@ -480,6 +484,8 @@ export const useWeb3 = () => {
 
             const { txHash } = await gasResponse.json();
 
+            console.log('On frontend and gas has been added on txHash : ', txHash)
+
             // 6. Wait for transaction receipt using web3.js
             const receipt = await waitForReceipt(txHash);
 
@@ -493,7 +499,10 @@ export const useWeb3 = () => {
     };
         // Helper function to poll for transaction receipt
     const waitForReceipt = async (txHash: string, interval = 1000, maxTries = 60): Promise<any> => {
-        const web3 = new Web3(new Web3.providers.HttpProvider(process.env.NEXT_PUBLIC_CELO_RPC as string));
+        // const web3 = new Web3(new Web3.providers.HttpProvider(process.env.NEXT_PUBLIC_CELO_RPC as string));
+        const web3 = new Web3(new Web3.providers.HttpProvider(CELO_RPC));
+
+        
 
         let tries = 0;
 

@@ -1,29 +1,51 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import type { Bet } from "@/lib/types"
 import { useWeb3 } from "@/contexts/useWeb3"
+import { useAccount } from "wagmi";
 
 
 
 
 interface PlaceBetModalProps {
   bet: Bet
-  userBalance: number
   prediction: "yes" | "no"
   onClose: () => void
   onPlaceBet: (amount: number) => void
 }
 
-export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBet }: PlaceBetModalProps) {
+export function PlaceBetModal({ bet, prediction, onClose, onPlaceBet }: PlaceBetModalProps) {
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { placeBetOnchain_celo, approveSpending, checkBalanceOfSingleAsset } = useWeb3();
+  const { placeBetOnchain_celo, approveSpending, checkBalanceOfSingleAsset, isWalletReady } = useWeb3();
+   const [userBalance, setUserBalance] = useState(0)
+    const { address, isConnected } = useAccount()
+   
+
+       useEffect(() => {
+       const fetchBalance = async () => {
+         if (address && isConnected) {
+           try {
+             const balance = await checkBalanceOfSingleAsset("cUSD", "celo")
+             setUserBalance(Number(balance.balance))
+           } catch (error) {
+             console.error("Error fetching balance:", error)
+             setUserBalance(0)
+           }
+         }
+       }
+   
+       fetchBalance()
+     }, [address, isConnected, isWalletReady])
+   
+   
 
 
   const handlePlaceBet = async () => {
+    console.log('bet is ', bet)
     const betAmount = Number.parseFloat(amount)
     
     if (betAmount <= 0 || betAmount > userBalance) {
@@ -114,7 +136,7 @@ export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBe
           {/* Balance - Always shows USD now */}
           <div className="bg-card border border-border rounded-lg p-3">
             <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
-            <p className="text-xl font-semibold text-foreground">${userBalance.toFixed(2)}</p>
+            <p className="text-xl font-semibold text-foreground">${userBalance}</p>
           </div>
 
           {/* Amount Input */}

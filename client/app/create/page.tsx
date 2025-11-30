@@ -387,8 +387,8 @@ export default function CreateBetPage() {
                 <div>
                   <div className="font-medium text-foreground">Public Market</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    It will be listed publicly on our app for anyone to see and participate in betting. This will need
-                    to go under review by an admin.
+                    It will be listed publicly on our app for anyone to see and participate in betting. 
+                    {/* This will need to go under review by an admin. */}
                   </p>
                 </div>
               </label>

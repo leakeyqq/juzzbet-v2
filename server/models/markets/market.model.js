@@ -100,6 +100,14 @@ const marketSchema = new mongoose.Schema({
             required: false
         }
     },
+    blockchainNetwork: {
+        type: String,
+        required: false
+    },
+    blockchainMarketId: {
+        type: Number,
+        required: false
+    },
     totalYesBets: {
             type: String,
             default: "0",

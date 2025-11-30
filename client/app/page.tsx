@@ -68,7 +68,7 @@ export default function Home() {
           category: "general", // You might want to add categories to your Market model
           totalNoBets: Number(market.totalNoBets),
           totalYesBets: Number(market.totalYesBets),
-          onchainId: Number(market.blockchain.marketId)
+          onchainId: market.blockchainMarketId
 
         }))
         

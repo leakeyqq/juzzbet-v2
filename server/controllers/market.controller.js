@@ -46,10 +46,8 @@ export const createMarket = async(req, res) => {
                 comments: "" // empty initially
             },
             timezoneOfCreator: timezone,
-            blockchain: {
-                network: "celo",
-                marketId: marketId
-            }
+            blockchainNetwork: "celo",
+            blockchainMarketId: marketId
         })
 
         newMarket = await newMarket.save()
