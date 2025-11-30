@@ -14,12 +14,55 @@ interface PlaceBetModalProps {
 
 export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBet }: PlaceBetModalProps) {
   const [amount, setAmount] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handlePlaceBet = () => {
+  const handlePlaceBet = async () => {
     const betAmount = Number.parseFloat(amount)
-    if (betAmount > 0 && betAmount <= userBalance) {
+    
+    if (betAmount <= 0 || betAmount > userBalance) {
+      setError("Invalid bet amount")
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/bettor/placeBet`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          marketShortId: bet.marketShortId || bet.id,
+          title: bet.title,
+          predictedYes: prediction === "yes",
+          betAmountUSD: betAmount.toString()
+        }),
+        credentials: "include" // This will include cookies for authentication
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to place bet")
+      }
+
+      const data = await response.json()
+      
+      // Call the parent handler
       onPlaceBet(betAmount)
       onClose()
+      
+      // Optional: Show success message or refresh data
+      console.log("Bet placed successfully:", data)
+      alert('Bet placed successfully!')
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to place bet")
+      console.error("Error placing bet:", err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -33,7 +76,11 @@ export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBe
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">Place Your Bet</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button 
+            onClick={onClose} 
+            className="text-muted-foreground hover:text-foreground"
+            disabled={isLoading}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -60,11 +107,16 @@ export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBe
               <input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  setAmount(e.target.value)
+                  setError(null) // Clear error when user types
+                }}
                 placeholder="Enter amount"
                 className="flex-1 px-3 py-3 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                min="0"
+                min="1"
                 max={userBalance}
+                step="0.01"
+                disabled={isLoading}
               />
             </div>
             <p className="text-xs text-muted-foreground mt-2">Min: $1 | Max: ${userBalance.toFixed(2)}</p>
@@ -77,8 +129,12 @@ export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBe
               return (
                 <button
                   key={preset}
-                  onClick={() => setAmount(presetAmount.toString())}
-                  className="py-2 px-2 bg-muted hover:bg-muted/80 text-foreground text-sm font-medium rounded-lg transition-colors"
+                  onClick={() => {
+                    setAmount(presetAmount.toString())
+                    setError(null) // Clear error when preset is selected
+                  }}
+                  className="py-2 px-2 bg-muted hover:bg-muted/80 text-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  disabled={isLoading}
                 >
                   +${presetAmount}
                 </button>
@@ -86,19 +142,37 @@ export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBe
             })}
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
           {/* Place Bet Button */}
           <button
             onClick={handlePlaceBet}
-            disabled={!amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > userBalance}
-            className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > userBalance || isLoading}
+            className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            Place Bet
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Placing Bet...
+              </>
+            ) : (
+              "Place Bet"
+            )}
           </button>
 
           {/* Cancel Button */}
           <button
             onClick={onClose}
-            className="w-full py-3 bg-muted text-foreground font-semibold rounded-lg hover:bg-muted/80 transition-colors"
+            disabled={isLoading}
+            className="w-full py-3 bg-muted text-foreground font-semibold rounded-lg hover:bg-muted/80 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

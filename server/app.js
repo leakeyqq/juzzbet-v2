@@ -9,6 +9,7 @@ dotenv.config()
 import authRouter from "./routes/auth.router.js"
 import marketRouter from "./routes/market.router.js"
 import feesRouter from "./routes/fees.router.js"
+import bettorRouter from "./routes/bettor.router.js"
 
 const app = express();
 app.use(express.json());
@@ -89,6 +90,7 @@ app.get("/ping", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/market", marketRouter)
 app.use('/api/fees', feesRouter)
+app.use('/api/bettor', bettorRouter)
 
 app.use(/.*/, (req, res) => {
   console.log(`[${req.method}] Unhandled request to: ${req.originalUrl}`);
