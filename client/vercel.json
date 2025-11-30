@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/demo/video",
+      "destination": "https://www.youtube.com/shorts/skVTvZFNpZ4",
+      "permanent": false
+    }
+  ]
+}

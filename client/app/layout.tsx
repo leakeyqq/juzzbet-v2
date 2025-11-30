@@ -13,9 +13,8 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Prediction Market",
+  title: "Juzzbet",
   description: "Create and trade prediction markets powered by X",
-  generator: "v0.app",
   viewport: {
     width: "device-width",
     initialScale: 1,
@@ -32,7 +31,7 @@ export const metadata: Metadata = {
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.svg",
+        url: "/icon.jpeg",
         type: "image/svg+xml",
       },
     ],
