@@ -3,6 +3,10 @@
 import { useState } from "react"
 import { X } from "lucide-react"
 import type { Bet } from "@/lib/types"
+import { useWeb3 } from "@/contexts/useWeb3"
+
+
+
 
 interface PlaceBetModalProps {
   bet: Bet
@@ -16,6 +20,8 @@ export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBe
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { placeBetOnchain_celo, approveSpending, checkBalanceOfSingleAsset } = useWeb3();
+
 
   const handlePlaceBet = async () => {
     const betAmount = Number.parseFloat(amount)
@@ -29,6 +35,17 @@ export function PlaceBetModal({ bet, userBalance, prediction, onClose, onPlaceBe
     setError(null)
 
     try {
+      const tokenSymbol = "cUSD"
+      const network = "celo"
+
+      const balance = await checkBalanceOfSingleAsset(tokenSymbol, network)
+
+      if(Number(balance.balance) < Number(betAmount)){
+        throw new Error('Insufficient account balance! Please top up.')
+      }
+      await approveSpending(betAmount.toString(), tokenSymbol)
+      await placeBetOnchain_celo(betAmount.toString(), bet.onchainId, prediction === "yes" )
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/bettor/placeBet`, {
         method: "POST",
         headers: {

@@ -23,7 +23,8 @@ export interface Bet {
   resolution?: "yes" | "no" | "cancelled"
   judges?: User[],
   totalYesBets: number,
-  totalNoBets: number
+  totalNoBets: number,
+  onchainId: number,
 }
 
 export interface UserBet {

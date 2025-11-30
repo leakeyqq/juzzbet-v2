@@ -282,6 +282,144 @@ export const useWeb3 = () => {
             throw new Error("Only isUsingWeb3Auth is allowed ")
         }
     }
+    const placeBetOnchain_celo = async (usdAmount: string, marketOnchainId: Number, yesBet: Boolean) => {
+        console.log('market id is ', marketOnchainId, typeof(marketOnchainId))
+        if (await isUsingWeb3Auth()) {
+            try {
+                
+            if (!QP_CONTRACT_CELO) {
+                throw new Error("QP_CONTRACT_CELO environment variable is not defined");
+            }
+
+
+            // Setup
+            const web3 = new Web3(new Web3.providers.HttpProvider(CELO_RPC));
+            const privateKey = await getEthereumPrivateKey();
+            const account = web3.eth.accounts.privateKeyToAccount(privateKey);
+            web3.eth.accounts.wallet.add(account);
+
+            const tokenSymbol = 'cUSD'
+            const decimals = checkDecimals(tokenSymbol);
+            const tokenContractAddress = checkContractAddress(tokenSymbol);
+
+            const amountInWei = BigInt(Math.floor(Number(usdAmount) * 10 ** decimals)).toString();
+            const tokenContract = new web3.eth.Contract(StableTokenABI.abi, tokenContractAddress);
+
+
+
+            const contract = new web3.eth.Contract(JuzzbetABI, QP_CONTRACT_CELO);
+
+             // 1. Allowance verification with retries (1s, 2s, 3s delays)
+            const requiredAmount = BigInt(amountInWei)
+            let currentAllowance = BigInt(0)
+
+            for (let attempt = 1; attempt <= 4; attempt++) {
+                try {
+                    currentAllowance = BigInt(await tokenContract.methods
+                        .allowance(account.address, QP_CONTRACT_CELO)
+                        .call());
+
+                    console.log(`Attempt ${attempt}: Allowance ${currentAllowance}/${requiredAmount}`);
+
+                    if (currentAllowance >= requiredAmount) break; // Success
+
+
+                    if (attempt === 3) throw new Error("Allowance problem after 3 attempts");
+
+                    const delay = attempt * 1000; // 1s, 2s, 3s
+                    console.log(`Waiting ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+
+                } catch (error) {
+                    console.log(error)
+                    throw new Error(`error happened ${error}`)
+                    // if (attempt === 3) throw new Error(`Final allowance check failed: ${error}`);
+                }
+            }
+
+
+
+
+            const data = contract.methods.placeBet(marketOnchainId, amountInWei, yesBet).encodeABI();
+
+            const gas = await contract.methods
+                .placeBet(marketOnchainId, amountInWei, yesBet)
+                .estimateGas({ from: account.address });
+
+            await prefillGas_v2(gas); // Your custom gas topping logic
+
+            const gasPrice = await web3.eth.getGasPrice();
+            const nonce = await web3.eth.getTransactionCount(account.address, "pending");
+
+            const tx = {
+                from: account.address,
+                to: QP_CONTRACT_CELO,
+                data,
+                gas,
+                gasPrice,
+                nonce,
+            };
+
+            const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+            const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+
+            console.log("✅ Transaction confirmed:", receipt.transactionHash);
+
+            } catch (error) {
+                console.log('error imehappen')
+                console.error(error)
+                throw error
+            }
+
+
+
+
+
+        } else {
+            throw new Error("Only isUsingWeb3Auth is allowed ")
+        }
+    }
+    const checkBalanceOfSingleAsset = async (tokenSymbol: string, network: SupportedNetwork): Promise<{
+        balance: string;
+    }> => {
+        try {
+
+            if (!walletClient) throw new Error("Wallet not connected");
+
+            if (network == 'celo' || tokenSymbol.toLocaleLowerCase() == 'cusd') {
+                // Get user address
+                const userAddress = walletClient.account.address;
+
+                // Create contract instance
+
+                // Get contract address 
+                const tokenAddress = checkContractAddress(tokenSymbol)
+                const decimals = checkDecimals(tokenSymbol)
+
+                const tokenContract = getContract({
+                    address: tokenAddress,
+                    abi: StableTokenABI.abi,
+                    client: publicClient,
+                });
+
+                // Get balance in wei (smallest unit)
+                const balanceInWei = await tokenContract.read.balanceOf([userAddress]);
+                const balance = Number(balanceInWei) / 10 ** decimals; // Convert to cUSD (18 decimals)
+
+                return {
+                    balance: balance.toString()
+                };
+
+            }else {
+                throw new Error(`Unsupported network: ${network}`);
+            }
+
+        } catch (e: any) {
+            console.error('❌ Error checking cUSD balance:', e);
+            throw new Error(`Failed to check balance: ${e?.message || e}`);
+        }
+    };
+
 
     const checkContractAddress = (tokenSymbol: string) => {
         if (tokenSymbol.toLowerCase() == 'ckes') {
@@ -373,6 +511,8 @@ export const useWeb3 = () => {
         approveSpending,
         createMarket,
         getUserAddress,
+        placeBetOnchain_celo,
+        checkBalanceOfSingleAsset,
         isWalletReady
     };
 };
