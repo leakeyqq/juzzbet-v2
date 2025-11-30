@@ -64,7 +64,7 @@ Juzz.bet is Africa's premier political prediction market platform, built specifi
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/juzzbet.git
+git clone [https://github.com/your-username/juzzbet.git](https://github.com/leakeyqq/juzzbet-v2.git)
 
 # Install dependencies
 npm install
