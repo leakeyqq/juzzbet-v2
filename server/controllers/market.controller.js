@@ -61,8 +61,18 @@ export const createMarket = async(req, res) => {
 }
 export const allMarkets = async(req, res) => {
     try {
-        const allMarkets = await Market.find({}, {bets: 0}).lean().exec()
+        const allMarkets = await Market.find({}, {}).lean().exec()
         return res.status(200).json({markets: allMarkets})
+    } catch (error) {
+        return res.status(500).json({error: error.message})
+    }
+}
+export const singleMarket = async(req, res) => {
+    const marketId = req.params.marketId
+    try {
+        const singleMarket = await Market.findOne({marketShortId: marketId}).lean().exec()
+        if(!singleMarket){throw new Error('No betting market found!')}
+        return res.status(200).json({market: singleMarket})
     } catch (error) {
         return res.status(500).json({error: error.message})
     }

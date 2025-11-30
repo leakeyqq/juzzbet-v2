@@ -1,6 +1,6 @@
 // contexts/AuthContext.tsx
 "use client";
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 
 interface AuthContextType {
@@ -17,13 +17,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authCheck, setAuthCheck] = useState(0);
   const { address, isConnected } = useAccount();
 
-  const triggerAuthCheck = () => {
+  // Use useCallback to memoize the trigger function
+  const triggerAuthCheck = useCallback(() => {
     setAuthCheck(prev => prev + 1);
-  };
+  }, []);
+
+  const isAuthenticated = isConnected && !!address;
 
   return (
     <AuthContext.Provider value={{
-      isAuthenticated: isConnected && !!address,
+      isAuthenticated,
       triggerAuthCheck
     }}>
       {children}

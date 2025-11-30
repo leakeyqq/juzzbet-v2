@@ -9,6 +9,7 @@ export interface User {
 export interface Bet {
   id: string
   title: string
+  marketShortId: string,
   description?: string
   creator: User
   image?: string
@@ -20,7 +21,9 @@ export interface Bet {
   createdAt: string
   resolved?: boolean
   resolution?: "yes" | "no" | "cancelled"
-  judges?: User[]
+  judges?: User[],
+  totalYesBets: number,
+  totalNoBets: number
 }
 
 export interface UserBet {

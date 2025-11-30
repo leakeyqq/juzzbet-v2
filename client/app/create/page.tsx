@@ -336,7 +336,7 @@ export default function CreateBetPage() {
             </div>
           </div>
 
-          <div>
+          <div className="hidden">
             <label className="block text-sm font-medium text-foreground mb-1">Judges</label>
             <p className="text-xs text-muted-foreground mb-3">
               Judges will decide the final results of which side won. All their votes must match for it to be valid.

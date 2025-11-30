@@ -17,12 +17,21 @@ export function Navbar() {
   const { address, isConnected } = useAccount()
   const [userInfo, setUserInfo] = useState<any>(null)
   const { isWalletReady } = useWeb3();
-      const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+    const [isMounted, setIsMounted] = useState(false)
 
+
+  
+  // Set mounted state to avoid hydration mismatches
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
 
   // Fetch user info when connected
   useEffect(() => {
+        if (!isMounted) return;
+    
     const fetchUserInfo = async () => {
       const web3auth = getWeb3AuthInstance();
       if (web3auth.connected) {
@@ -36,9 +45,11 @@ export function Navbar() {
     }
 
     fetchUserInfo()
-  }, [isConnected, address, isWalletReady])
+  }, [isConnected, address, isWalletReady, isMounted])
 
-    useEffect(() => {
+  useEffect(() => {
+        if (!isMounted) return;
+    
     const hasLoggedIn = sessionStorage.getItem('hasLoggedIn') === 'true';
     // if (isConnected && address && isAuthenticated && !hasLoggedIn) {
     if (isConnected && address && isAuthenticated && !hasLoggedIn) {
@@ -51,7 +62,7 @@ export function Navbar() {
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
+              body: JSON.stringify({
                 ethAddress: address,
                 names: userInfo.typeOfLogin === 'email_passwordless' ? null : (userInfo.name || null),
                 email: userInfo.email,
@@ -78,17 +89,40 @@ export function Navbar() {
 
       login();
     }
-  }, [isConnected, address, userInfo]);
+  }, [isConnected, address, isMounted]);
   // Reset login state when disconnected
-useEffect(() => {
-  if (!isConnected) {
-  sessionStorage.removeItem('hasLoggedIn');
-  sessionStorage.removeItem('hasSentInviteCode');
-  }
-}, [isConnected]);
+
+  useEffect(() => {
+        if (!isMounted) return;
+    if (!isConnected) {
+      sessionStorage.removeItem('hasLoggedIn');
+      sessionStorage.removeItem('hasSentInviteCode');
+    }
+  }, [isConnected, isMounted]);
 
   // User is considered logged in if they have a connected wallet
   // const isLoggedIn = isConnected && address
+  if (!isMounted) {
+    return (
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-2xl font-bold text-foreground tracking-tight hover:text-accent transition-colors"
+          >
+            Juzzbet
+          </Link>
+          {/* Show only connect button during SSR */}
+          <div className="hidden md:block">
+            <ConnectWalletButton />
+          </div>
+          <div className="md:hidden">
+            <ConnectWalletButton />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/50">
@@ -182,31 +216,31 @@ useEffect(() => {
       {/* Mobile Menu */}
       {showMobileMenu && isConnected && address && (
         <div className="border-t border-border/50 px-4 sm:px-6 py-4 space-y-3 md:hidden backdrop-blur-sm bg-background/95">
-             {/* User Profile Section */}
-    <div className="flex items-center gap-3 pb-3 border-b border-border/50">
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white">
-        {userInfo?.profileImage ? (
-          <img 
-            src={userInfo.profileImage} 
-            alt="Profile" 
-            className="w-12 h-12 rounded-full object-cover"
-          />
-        ) : (
-          <span className="font-semibold text-lg">
-            {userInfo?.name?.[0]?.toUpperCase() || 'U'}
-          </span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-foreground truncate">
-          {userInfo?.name || 'User'}
-        </p>
-        <p className="text-sm text-muted-foreground truncate">
-          {userInfo?.email || 'No email provided'}
-        </p>
-      </div>
-    </div>
-    
+          {/* User Profile Section */}
+          <div className="flex items-center gap-3 pb-3 border-b border-border/50">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white">
+              {userInfo?.profileImage ? (
+                <img
+                  src={userInfo.profileImage}
+                  alt="Profile"
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <span className="font-semibold text-lg">
+                  {userInfo?.name?.[0]?.toUpperCase() || 'U'}
+                </span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-foreground truncate">
+                {userInfo?.name || 'User'}
+              </p>
+              <p className="text-sm text-muted-foreground truncate">
+                {userInfo?.email || 'No email provided'}
+              </p>
+            </div>
+          </div>
+
           <div className="pt-2 space-y-2">
             <Link
               href="/my-bets"

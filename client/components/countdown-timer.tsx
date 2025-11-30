@@ -8,6 +8,10 @@ interface CountdownTimerProps {
 
 export function CountdownTimer({ endTime }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState("")
+  // const {postedText, setPostedText} =  useState<string>("")
+  const [postedText2, setPostedText] = useState<string>("") // Fixed: separate useState hook
+
+
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -17,6 +21,8 @@ export function CountdownTimer({ endTime }: CountdownTimerProps) {
 
       if (diff <= 0) {
         setTimeLeft("Ended")
+        setPostedText(`Has ended!`)
+
         return
       }
 
@@ -26,10 +32,13 @@ export function CountdownTimer({ endTime }: CountdownTimerProps) {
 
       if (days > 0) {
         setTimeLeft(`${days}d ${hours}h`)
+        setPostedText(`Ends in ${days}d ${hours}h`)
       } else if (hours > 0) {
         setTimeLeft(`${hours}h ${mins}m`)
+        setPostedText(`Ends in ${hours}h ${mins}m`)
       } else {
         setTimeLeft(`${mins}m`)
+        setPostedText(`Ends in ${mins}m`)
       }
     }
 
@@ -39,5 +48,7 @@ export function CountdownTimer({ endTime }: CountdownTimerProps) {
     return () => clearInterval(interval)
   }, [endTime])
 
-  return <span className="text-xs text-muted-foreground font-medium">Ends in {timeLeft}</span>
+  // return <span className="text-xs text-muted-foreground font-medium">Ends in {timeLeft}</span>
+  return <span className="text-xs text-muted-foreground font-medium">{postedText2}</span>
+
 }
