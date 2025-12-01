@@ -65,3 +65,16 @@ export const placeBet = async(req, res) => {
         return res.status(500).json({error: error.message})
     }
 }
+export const myBets = async(req,res) => {
+    try {
+    const userWallet = req.walletAddress 
+    const bettor = await Bettor.findOne({walletAddress: userWallet}).lean().exec()
+    if(!bettor){
+        return res.status(200).json({mybets: []})
+    }
+    return res.status(200).json({mybets: bettor.myBets})
+    } catch (error) {
+        return res.status(500).json({error: error.message})
+    }
+
+}

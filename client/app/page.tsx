@@ -181,13 +181,13 @@ export default function Home() {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowCreateOptions(false)} />
             <div className="absolute right-0 bottom-20 bg-card border border-border/50 rounded-2xl shadow-2xl z-50 w-64 overflow-hidden backdrop-blur-sm">
-              <a
+              {/* <a
                 href="/my-bets?tab=created"
                 className="block px-5 py-4 text-sm font-medium text-foreground hover:bg-muted transition-colors border-b border-border/50"
                 onClick={() => setShowCreateOptions(false)}
               >
                 View created bets
-              </a>
+              </a> */}
               <a
                 href="/create"
                 className="block px-5 py-4 text-sm font-medium text-foreground hover:bg-muted transition-colors"

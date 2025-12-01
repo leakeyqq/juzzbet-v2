@@ -83,13 +83,13 @@ export default function WalletPage() {
             <Plus className="w-5 h-5" />
             Top Up
           </button>
-          <button
+          {/* <button
             onClick={() => setShowWithdrawModal(true)}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
           >
             <Minus className="w-5 h-5" />
             Withdraw
-          </button>
+          </button> */}
         </div>
 
         {/* Transaction History */}

@@ -87,6 +87,10 @@ export const mockBets: Bet[] = [
     ],
     createdAt: new Date().toISOString(),
     judges: [mockJudges[0], mockJudges[1]],
+    marketShortId: "",
+    totalYesBets: 0,
+    totalNoBets: 0,
+    onchainId: 0
   },
   {
     id: "bet-2",
@@ -106,6 +110,10 @@ export const mockBets: Bet[] = [
     noBets: [{ userId: "user-4", amount: 90 }],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     judges: [mockJudges[1], mockJudges[2]],
+    marketShortId: "",
+    totalYesBets: 0,
+    totalNoBets: 0,
+    onchainId: 0
   },
   {
     id: "bet-3",

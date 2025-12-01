@@ -4,9 +4,18 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { ArrowLeft, CheckCircle, Clock, XCircle } from "lucide-react"
-import { mockUserBets, mockBets, mockCreatedBets } from "@/lib/mock-data"
+import { mockBets, mockCreatedBets } from "@/lib/mock-data"
 import { Navbar } from "@/components/navbar"
 import type { Bet } from "@/lib/types"
+
+interface MyBet {
+  marketShortId: string
+  title: string
+  predictedYes: boolean
+  placedBetOn: string
+  betAmountUSD: string
+  marketOutcome: string
+}
 
 export default function MyBetsPage() {
   const searchParams = useSearchParams()
@@ -14,18 +23,9 @@ export default function MyBetsPage() {
   const [activeTab, setActiveTab] = useState<"my-bets" | "created">(tabParam === "created" ? "created" : "my-bets")
   const [selectedCurrency, setSelectedCurrency] = useState<"All" | "USD" | "KES" | "NGN">("All")
   const [createdBets, setCreatedBets] = useState<Bet[]>(mockCreatedBets)
-
-  const currentUser = {
-    id: "user-1",
-    xHandle: "@yourhandle",
-    xUsername: "Your Name",
-    xProfileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=user1",
-    balance: {
-      USD: 1500,
-      KES: 150000,
-      NGN: 650000,
-    },
-  }
+  const [myBets, setMyBets] = useState<MyBet[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (tabParam === "created") {
@@ -33,63 +33,68 @@ export default function MyBetsPage() {
     }
   }, [tabParam])
 
-  const resolvedBets = mockUserBets.filter((ub) => ub.resolved)
-  const pendingBets = mockUserBets.filter((ub) => !ub.resolved)
+  // Fetch real bets from backend
+  useEffect(() => {
+    const fetchMyBets = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/bettor/myBets`, {
+          credentials: "include" // Include cookies for authentication
+        })
 
-  const handleResolveBet = (betId: string, resolution: "yes" | "no") => {
-    if (confirm(`Are you sure you want to resolve this bet to ${resolution.toUpperCase()}?`)) {
-      setCreatedBets(
-        createdBets.map((bet) =>
-          bet.id === betId
-            ? {
-                ...bet,
-                resolved: true,
-                resolution,
-              }
-            : bet,
-        ),
-      )
-      alert(`Bet resolved to ${resolution.toUpperCase()}. Winners will be notified.`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch bets')
+        }
+
+        const data = await response.json()
+        setMyBets(data.mybets || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load bets')
+        console.error('Error fetching bets:', err)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    // Only fetch if we're on the "my-bets" tab
+    if (activeTab === "my-bets") {
+      fetchMyBets()
+    }
+  }, [activeTab])
+
+  // Categorize bets into pending and resolved
+  const pendingBets = myBets.filter(bet => bet.marketOutcome === "pending")
+  const resolvedBets = myBets.filter(bet => bet.marketOutcome !== "pending")
+
+  // Helper function to check if bet was won
+  const checkIfBetWon = (bet: MyBet) => {
+    if (bet.marketOutcome === "pending") return undefined
+    if (bet.marketOutcome === "cancelled") return false // Cancelled bets don't win
+    if (bet.marketOutcome === "yesWon" && bet.predictedYes) return true
+    if (bet.marketOutcome === "noWon" && !bet.predictedYes) return true
+    return false
   }
 
-  const handleCancelBet = (betId: string) => {
-    if (confirm("Are you sure you want to cancel this bet? All users will be refunded.")) {
-      setCreatedBets(
-        createdBets.map((bet) =>
-          bet.id === betId
-            ? {
-                ...bet,
-                resolved: true,
-                resolution: "cancelled" as const,
-              }
-            : bet,
-        ),
-      )
-      alert("Bet cancelled. All users have been refunded.")
-    }
-  }
-
-  const renderBetItem = (userBet: any) => {
-    const bet = mockBets.find((b) => b.id === userBet.betId)
-    if (!bet) return null
+  const renderBetItem = (bet: MyBet, index: number) => {
+    const won = checkIfBetWon(bet)
+    const isResolved = bet.marketOutcome !== "pending"
 
     return (
-      <Link key={userBet.betId} href={`/bet/${userBet.betId}`}>
+      <Link key={`${bet.marketShortId}-${index}`} href={`/bet/${bet.marketShortId}`}>
         <div className="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer">
           <div className="flex items-start justify-between mb-2">
             <h3 className="font-semibold text-foreground line-clamp-2 flex-1">{bet.title}</h3>
-            {userBet.resolved && (
+            {isResolved && (
               <div
                 className={`ml-2 flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-                  userBet.won ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                  won ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
                 }`}
               >
                 <CheckCircle className="w-3 h-3" />
-                {userBet.won ? "Won" : "Lost"}
+                {won ? "Won" : "Lost"}
               </div>
             )}
-            {!userBet.resolved && (
+            {!isResolved && (
               <div className="ml-2 flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-blue-50 text-blue-700">
                 <Clock className="w-3 h-3" />
                 Pending
@@ -100,21 +105,31 @@ export default function MyBetsPage() {
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-sm text-muted-foreground">Your prediction</p>
-              <p className={`text-lg font-bold ${userBet.prediction === "yes" ? "text-green-600" : "text-red-600"}`}>
-                {userBet.prediction.toUpperCase()}
+              <p className={`text-lg font-bold ${bet.predictedYes ? "text-green-600" : "text-red-600"}`}>
+                {bet.predictedYes ? "YES" : "NO"}
               </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Bet amount</p>
               <p className="text-lg font-bold text-foreground">
-                {userBet.amount} {bet.currency}
+                ${bet.betAmountUSD} USD
               </p>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Placed {new Date(userBet.placedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+            Placed {new Date(bet.placedBetOn).toLocaleDateString(undefined, { 
+              month: "short", 
+              day: "numeric",
+              year: "numeric"
+            })}
           </p>
+          
+          {isResolved && bet.marketOutcome === "cancelled" && (
+            <p className="text-xs text-yellow-600 mt-2">
+              Bet was cancelled - refunded
+            </p>
+          )}
         </div>
       </Link>
     )
@@ -228,16 +243,44 @@ export default function MyBetsPage() {
     )
   }
 
+  // Keep the same handleResolveBet and handleCancelBet functions for created bets
+  const handleResolveBet = (betId: string, resolution: "yes" | "no") => {
+    if (confirm(`Are you sure you want to resolve this bet to ${resolution.toUpperCase()}?`)) {
+      setCreatedBets(
+        createdBets.map((bet) =>
+          bet.id === betId
+            ? {
+                ...bet,
+                resolved: true,
+                resolution,
+              }
+            : bet,
+        ),
+      )
+      alert(`Bet resolved to ${resolution.toUpperCase()}. Winners will be notified.`)
+    }
+  }
+
+  const handleCancelBet = (betId: string) => {
+    if (confirm("Are you sure you want to cancel this bet? All users will be refunded.")) {
+      setCreatedBets(
+        createdBets.map((bet) =>
+          bet.id === betId
+            ? {
+                ...bet,
+                resolved: true,
+                resolution: "cancelled" as const,
+              }
+            : bet,
+        ),
+      )
+      alert("Bet cancelled. All users have been refunded.")
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar
-        isLoggedIn={true}
-        onLogin={() => {}}
-        onLogout={() => {}}
-        selectedCurrency={selectedCurrency}
-        onCurrencyChange={setSelectedCurrency}
-        currentUser={currentUser}
-      />
+      <Navbar/>
 
       <div className="pb-6 px-4 pt-4 max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
@@ -258,7 +301,7 @@ export default function MyBetsPage() {
           >
             My Bets
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab("created")}
             className={`px-4 py-2 font-medium text-sm transition-colors ${
               activeTab === "created"
@@ -267,36 +310,48 @@ export default function MyBetsPage() {
             }`}
           >
             Created Bets
-          </button>
+          </button> */}
         </div>
 
         {activeTab === "my-bets" ? (
           <>
-            {/* Pending Bets */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                Pending Bets ({pendingBets.length})
-              </h2>
-              {pendingBets.length > 0 ? (
-                <div className="space-y-3">{pendingBets.map(renderBetItem)}</div>
-              ) : (
-                <p className="text-muted-foreground">No pending bets</p>
-              )}
-            </div>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading your bets...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-600">{error}</p>
+              </div>
+            ) : (
+              <>
+                {/* Pending Bets */}
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    Pending Bets ({pendingBets.length})
+                  </h2>
+                  {pendingBets.length > 0 ? (
+                    <div className="space-y-3">{pendingBets.map(renderBetItem)}</div>
+                  ) : (
+                    <p className="text-muted-foreground">No pending bets</p>
+                  )}
+                </div>
 
-            {/* Resolved Bets */}
-            <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                Resolved Bets ({resolvedBets.length})
-              </h2>
-              {resolvedBets.length > 0 ? (
-                <div className="space-y-3">{resolvedBets.map(renderBetItem)}</div>
-              ) : (
-                <p className="text-muted-foreground">No resolved bets</p>
-              )}
-            </div>
+                {/* Resolved Bets */}
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    Resolved Bets ({resolvedBets.length})
+                  </h2>
+                  {resolvedBets.length > 0 ? (
+                    <div className="space-y-3">{resolvedBets.map(renderBetItem)}</div>
+                  ) : (
+                    <p className="text-muted-foreground">No resolved bets</p>
+                  )}
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div>
